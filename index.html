@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DevDirector">
+<title>DevDirector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F4F2EE; --surface: #FFFFFF; --surface2: #F9F8F6;
+  --border: #E5E1D9; --border2: #CEC9BE;
+  --text: #18150F; --text2: #5A5349; --text3: #9B9590;
+  --accent: #1C3A28; --accent2: #2E5C42;
+  --gold: #C09A5C; --gold-bg: #F5ECD8;
+  --red: #B84A35; --green: #2A7050; --blue: #2B567F;
+  --sidebar-w: 216px;
+}
+html, body { height: 100%; overflow: hidden; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── LAYOUT ── */
+#app { display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
+#sidebar { width: var(–sidebar-w); min-width: var(–sidebar-w); background: var(–accent); display: flex; flex-direction: column; overflow-y: auto; transition: transform 0.28s ease; z-index: 50; }
+#main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+#topbar { background: var(–surface); border-bottom: 1px solid var(–border); padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 10px; }
+#content { flex: 1; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
+
+/* ── MOBILE ── */
+@media (max-width: 680px) {
+:root { –sidebar-w: 240px; }
+#sidebar { position: fixed; top: 0; left: 0; height: 100%; transform: translateX(-100%); box-shadow: 4px 0 24px rgba(0,0,0,0.18); }
+#sidebar.open { transform: translateX(0); }
+#overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 49; }
+#overlay.show { display: block; }
+.grid-4 { grid-template-columns: repeat(2,1fr) !important; }
+.grid-3 { grid-template-columns: repeat(1,1fr) !important; }
+.grid-2 { grid-template-columns: repeat(1,1fr) !important; }
+.form-row { grid-template-columns: 1fr !important; }
+.hide-mobile { display: none !important; }
+}
+
+/* ── SIDEBAR ── */
+.sb-logo { padding: 20px 16px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.sb-logo h1 { font-family: ‘Cormorant Garamond’, serif; font-size: 21px; font-weight: 600; color: #fff; letter-spacing: 0.03em; }
+.sb-logo p { font-size: 9px; color: rgba(255,255,255,0.32); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 2px; }
+.sb-sec { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.28); padding: 12px 16px 5px; }
+.sb-item { display: flex; align-items: center; gap: 9px; padding: 9px 16px; cursor: pointer; color: rgba(255,255,255,0.55); font-size: 13px; transition: all 0.14s; border-left: 2px solid transparent; -webkit-tap-highlight-color: transparent; }
+.sb-item:hover, .sb-item:active { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.07); }
+.sb-item.active { color: #fff; background: rgba(255,255,255,0.1); border-left-color: var(–gold); }
+.sb-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.sb-divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 5px 0; }
+.sb-footer { padding: 14px 14px; margin-top: auto; }
+.hamburger { background: none; border: 1px solid var(–border); border-radius: 4px; padding: 6px 8px; cursor: pointer; color: var(–text2); display: none; align-items: center; justify-content: center; }
+@media (max-width: 680px) { .hamburger { display: flex; } }
+
+/* ── TOPBAR ── */
+.tb-title { font-family: ‘Cormorant Garamond’, serif; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-meta { font-size: 11px; color: var(–text3); }
+.tb-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* ── BUTTONS ── */
+.btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; font-size: 12.5px; font-family: ‘DM Sans’, sans-serif; font-weight: 500; transition: all 0.14s; line-height: 1; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+.btn-primary { background: var(–accent); color: #fff; border-color: var(–accent); }
+.btn-primary:hover { background: var(–accent2); }
+.btn-ghost { background: transparent; color: var(–text2); border-color: var(–border); }
+.btn-ghost:hover { background: var(–surface2); }
+.btn-danger { background: transparent; color: var(–red); border-color: var(–border); }
+.btn-gold { background: var(–gold); color: #fff; border-color: var(–gold); width: 100%; justify-content: center; font-size: 12px; }
+.btn-sm { padding: 5px 11px; font-size: 12px; }
+.btn-icon { padding: 6px; }
+
+/* ── CARDS ── */
+.card { background: var(–surface); border: 1px solid var(–border); border-radius: 6px; }
+.card-header { padding: 13px 16px; border-bottom: 1px solid var(–border); display: flex; align-items: center; justify-content: space-between; }
+.card-body { padding: 16px; }
+.stat-card { background: var(–surface); border: 1px solid var(–border); border-radius: 6px; padding: 14px 16px; }
+.stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(–text3); margin-bottom: 5px; }
+.stat-value { font-family: ‘Cormorant Garamond’, serif; font-size: 32px; font-weight: 600; line-height: 1; }
+.stat-sub { font-size: 11px; color: var(–text3); margin-top: 3px; }
+
+/* ── GRIDS ── */
+.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
+.mb14 { margin-bottom: 14px; } .mb18 { margin-bottom: 18px; } .mb20 { margin-bottom: 20px; }
+
+/* ── PROJECT CARD ── */
+.pcard { background: var(–surface); border: 1px solid var(–border); border-radius: 6px; cursor: pointer; transition: all 0.16s; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+.pcard:hover { border-color: var(–border2); box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+.pcard-accent { height: 3px; }
+.pcard-body { padding: 14px 15px 15px; }
+.pcard-type { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(–text3); margin-bottom: 4px; }
+.pcard-name { font-family: ‘Cormorant Garamond’, serif; font-size: 18px; font-weight: 600; line-height: 1.2; margin-bottom: 3px; }
+.pcard-loc { font-size: 12px; color: var(–text2); margin-bottom: 10px; }
+.pcard-stats { display: flex; gap: 12px; margin-bottom: 10px; }
+.pstat-lbl { font-size: 10px; color: var(–text3); text-transform: uppercase; letter-spacing: 0.07em; }
+.pstat-val { font-size: 13px; font-weight: 600; }
+.pcard-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+
+/* ── STAGE BADGE ── */
+.stage-badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 20px; font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; }
+
+/* ── PROGRESS ── */
+.prog-track { background: var(–border); border-radius: 2px; height: 4px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+
+/* ── TABS ── */
+.tabs { display: flex; border-bottom: 1px solid var(–border); margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { padding: 8px 13px; font-size: 13px; font-weight: 500; color: var(–text3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.14s; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+.tab:hover { color: var(–text2); }
+.tab.active { color: var(–accent); border-bottom-color: var(–accent); }
+.tab-badge { font-size: 9.5px; padding: 1px 5px; border-radius: 8px; margin-left: 3px; }
+
+/* ── MILESTONES ── */
+.ms-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(–border); }
+.ms-row:last-child { border-bottom: none; }
+.ms-check { width: 19px; height: 19px; border-radius: 50%; border: 1.5px solid var(–border2); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.14s; -webkit-tap-highlight-color: transparent; }
+.ms-check.done { background: var(–green); border-color: var(–green); }
+.ms-label { flex: 1; font-size: 13px; min-width: 0; }
+.ms-label.done { color: var(–text3); text-decoration: line-through; }
+.ms-date { font-size: 11px; color: var(–text3); white-space: nowrap; }
+
+/* ── NOTES ── */
+.note-item { padding: 10px 12px; background: var(–surface2); border-radius: 4px; border-left: 3px solid var(–gold); margin-bottom: 8px; }
+.note-meta { font-size: 10px; color: var(–text3); margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; }
+.note-text { font-size: 13px; }
+
+/* ── ACTIONS ── */
+.act-item { padding: 10px 12px; background: var(–surface2); border-radius: 4px; display: flex; align-items: flex-start; gap: 9px; margin-bottom: 8px; border: 1px solid var(–border); }
+.act-item.faded { opacity: 0.5; }
+.act-check { width: 15px; height: 15px; border-radius: 3px; border: 1.5px solid var(–border2); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 2px; transition: all 0.14s; -webkit-tap-highlight-color: transparent; }
+.act-check.done { background: var(–accent); border-color: var(–accent); }
+.act-text { font-size: 13px; }
+.act-text.done { text-decoration: line-through; color: var(–text3); }
+.act-meta { font-size: 11px; color: var(–text3); margin-top: 2px; }
+.pri-badge { font-size: 9.5px; padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+.pri-High { background: #F9E4DF; color: var(–red); }
+.pri-Medium { background: #EBF1FA; color: var(–blue); }
+.pri-Low { background: #EAF5EF; color: var(–green); }
+
+/* ── MISC ── */
+.chip { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 3px; font-size: 11px; background: var(–surface2); border: 1px solid var(–border); color: var(–text2); }
+.del-btn { background: none; border: none; cursor: pointer; color: var(–text3); padding: 2px 5px; font-size: 15px; line-height: 1; border-radius: 3px; transition: color 0.14s; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+.del-btn:hover { color: var(–red); }
+.sec-title { font-family: ‘Cormorant Garamond’, serif; font-size: 22px; font-weight: 600; margin-bottom: 2px; }
+.sec-sub { font-size: 13px; color: var(–text3); margin-bottom: 16px; }
+.breadcrumb { font-size: 12px; color: var(–text3); margin-bottom: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; -webkit-tap-highlight-color: transparent; }
+.detail-title { font-family: ‘Cormorant Garamond’, serif; font-size: 26px; font-weight: 600; line-height: 1.1; margin-bottom: 4px; }
+.detail-sub { font-size: 13px; color: var(–text2); }
+.empty-state { text-align: center; padding: 36px 16px; }
+.empty-icon { font-size: 26px; opacity: 0.35; margin-bottom: 9px; }
+.empty-title { font-size: 14px; font-weight: 500; color: var(–text2); margin-bottom: 3px; }
+.empty-sub { font-size: 12px; color: var(–text3); }
+
+/* ── TIMELINE ── */
+.tl-wrap { display: flex; gap: 0; margin: 12px 0 4px; }
+.tl-stage { flex: 1; text-align: center; }
+.tl-bar { height: 5px; background: var(–border); margin: 0 2px; border-radius: 1px; }
+.tl-bar.done { background: var(–green); }
+.tl-bar.active { background: var(–gold); }
+.tl-lbl { font-size: 8px; color: var(–text3); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 5px; }
+
+/* ── TABLE ── */
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em; color: var(–text3); font-weight: 600; padding: 7px 10px; text-align: left; border-bottom: 1px solid var(–border); }
+.tbl td { padding: 9px 10px; border-bottom: 1px solid var(–border); font-size: 13px; }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: var(–surface2); cursor: pointer; }
+
+/* ── FORMS ── */
+.form-group { margin-bottom: 13px; }
+.form-label { display: block; font-size: 11px; font-weight: 600; color: var(–text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.07em; }
+.form-input, .form-select, .form-textarea { width: 100%; padding: 8px 10px; border: 1px solid var(–border); border-radius: 4px; font-size: 14px; font-family: ‘DM Sans’, sans-serif; color: var(–text); background: var(–surface); outline: none; transition: border-color 0.14s; -webkit-appearance: none; }
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(–accent); }
+.form-textarea { min-height: 80px; resize: vertical; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-hint { font-size: 12px; color: var(–text3); padding: 7px 10px; background: var(–surface2); border-radius: 4px; margin-top: 4px; }
+
+/* ── MODAL ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(18,15,10,0.44); z-index: 200; display: none; align-items: flex-end; justify-content: center; padding: 0; animation: fIn 0.15s ease; }
+.modal-overlay.show { display: flex; }
+@media (min-width: 480px) { .modal-overlay { align-items: center; padding: 20px; } }
+.modal { background: var(–surface); border-radius: 12px 12px 0 0; width: 100%; max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 -8px 40px rgba(0,0,0,0.15); animation: sUp 0.2s ease; }
+@media (min-width: 480px) { .modal { border-radius: 8px; max-width: 520px; max-height: 88vh; animation: sUpD 0.18s ease; } }
+.modal-header { padding: 16px 18px; border-bottom: 1px solid var(–border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(–surface); z-index: 1; }
+.modal-title { font-family: ‘Cormorant Garamond’, serif; font-size: 20px; font-weight: 600; }
+.modal-body { padding: 18px; }
+.modal-footer { padding: 12px 18px; border-top: 1px solid var(–border); display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 0; background: var(–surface); }
+
+/* ── RANGE ── */
+input[type=range] { -webkit-appearance: none; height: 4px; background: var(–border); border-radius: 2px; outline: none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(–accent); cursor: pointer; }
+
+@keyframes fIn { from { opacity:0 } to { opacity:1 } }
+@keyframes sUp { from { transform:translateY(100%) } to { transform:translateY(0) } }
+@keyframes sUpD { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+</style>
+
+</head>
+<body>
+<div id="overlay" onclick="closeSidebar()"></div>
+<div id="app">
+  <aside id="sidebar">
+    <div class="sb-logo"><h1>DevDirector</h1><p>Portfolio Command</p></div>
+    <div id="sb-nav"></div>
+    <div class="sb-footer">
+      <button class="btn btn-gold" onclick="openModal('project')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        New Project
+      </button>
+    </div>
+  </aside>
+
+  <div id="main">
+    <div id="topbar">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div style="flex:1;min-width:0">
+        <div class="tb-title" id="tb-title">Dashboard</div>
+        <div class="tb-meta" id="tb-meta"></div>
+      </div>
+      <div class="tb-right" id="tb-right"></div>
+    </div>
+    <div id="content"></div>
+  </div>
+</div>
+
+<!-- Modals -->
+
+<div class="modal-overlay" id="modal-project"><div class="modal" id="modal-project-inner"></div></div>
+<div class="modal-overlay" id="modal-note"><div class="modal" id="modal-note-inner"></div></div>
+<div class="modal-overlay" id="modal-action"><div class="modal" id="modal-action-inner"></div></div>
+<div class="modal-overlay" id="modal-milestone"><div class="modal" id="modal-milestone-inner"></div></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const STAGES = [
+  { id:"feasibility",   label:"Feasibility & Acquisition", color:"#C09A5C", short:"FEASIBILITY" },
+  { id:"planning",      label:"Planning & Design",          color:"#6E9EC8", short:"PLANNING" },
+  { id:"construction",  label:"Construction",               color:"#7EC8A9", short:"CONSTRUCTION" },
+  { id:"sales",         label:"Sales & Leasing / Exit",    color:"#C87E9E", short:"SALES & EXIT" },
+];
+const PTYPES = ["Residential","Commercial / Mixed-Use","Consulting","Personal Development"];
+const MS_TPLS = {
+  feasibility:  ["Site Identified","Initial Feasibility Complete","Due Diligence Started","Due Diligence Complete","Heads of Terms Agreed","Contracts Exchanged","Acquisition Complete"],
+  planning:     ["Consultant Team Appointed","Concept Design Complete","Pre-App Submitted","Planning Application Submitted","Planning Approved","Reserved Matters Submitted","Reserved Matters Approved"],
+  construction: ["Tender Issued","Contractor Appointed","Enabling Works","Groundworks Complete","Superstructure Complete","Roof On / Watertight","Fit-Out Complete","Practical Completion"],
+  sales:        ["Sales Strategy Agreed","Marketing Launched","First Sale Agreed","50% Sold","Fully Sold / Leased","Practical Completion","Final Account Agreed","Project Closed"],
+};
+const PRIO = ["High","Medium","Low"];
+const DEFAULT_PROJECTS = [
+  { id:"p1", name:"Riverside Quarter", type:"Residential", location:"Bristol, BS1", stage:"construction", value:"£42m GDV", units:"186 units", progress:62, startDate:"2023-03-01", targetDate:"2025-09-30", description:"Mixed tenure residential development on former industrial waterfront site.",
+    milestones:[{id:"m1",label:"Site Identified",done:true,date:"2023-03-01"},{id:"m2",label:"Acquisition Complete",done:true,date:"2023-07-14"},{id:"m3",label:"Planning Approved",done:true,date:"2024-02-22"},{id:"m4",label:"Contractor Appointed",done:true,date:"2024-05-01"},{id:"m5",label:"Superstructure Complete",done:false,date:"2025-03-31"},{id:"m6",label:"Practical Completion",done:false,date:"2025-09-30"}],
+    notes:[{id:"n1",text:"Site visit: structural steel programme 2 weeks ahead. Contractor confident on PC date.",date:"2025-02-14"}],
+    actions:[{id:"a1",text:"Chase M&E sub-contractor programme update",priority:"High",dueDate:"2025-03-20",assignee:"Self",done:false,created:"2025-03-01"}]},
+  { id:"p2", name:"Forum Exchange", type:"Commercial / Mixed-Use", location:"Leeds, LS1", stage:"planning", value:"£78m GDV", units:"220,000 sqft", progress:35, startDate:"2024-01-10", targetDate:"2026-12-31", description:"Grade-A office and retail mixed-use scheme in city centre regeneration zone.",
+    milestones:[{id:"m1",label:"Site Identified",done:true,date:"2024-01-10"},{id:"m2",label:"Acquisition Complete",done:true,date:"2024-04-30"},{id:"m3",label:"Concept Design Complete",done:true,date:"2024-09-15"},{id:"m4",label:"Pre-App Submitted",done:false,date:"2025-02-28"},{id:"m5",label:"Planning Application Submitted",done:false,date:"2025-06-30"},{id:"m6",label:"Planning Approved",done:false,date:"2026-01-31"}],
+    notes:[], actions:[{id:"a2",text:"Confirm pre-app meeting date with LPA",priority:"High",dueDate:"2025-03-15",assignee:"Self",done:false,created:"2025-02-20"}]},
+  { id:"p3", name:"Meridian Advisory", type:"Consulting", location:"Remote / Birmingham", stage:"feasibility", value:"Fee: £85k", units:"Advisory", progress:20, startDate:"2025-01-15", targetDate:"2025-07-31", description:"Development appraisal and planning strategy for private client brownfield site.",
+    milestones:[{id:"m1",label:"Brief Agreed",done:true,date:"2025-01-15"},{id:"m2",label:"Initial Feasibility Complete",done:false,date:"2025-03-15"},{id:"m3",label:"Report Delivered",done:false,date:"2025-07-31"}],
+    notes:[], actions:[]},
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────────
+const STORE = "devdirector_html_v1";
+let state = { view:"dashboard", selectedId:null, tab:"milestones", typeFilter:"all", actionFilter:"open" };
+let projects = [];
+
+function loadData() {
+  try { const r = localStorage.getItem(STORE); if(r) { projects = JSON.parse(r); return; } } catch(e){}
+  projects = JSON.parse(JSON.stringify(DEFAULT_PROJECTS));
+}
+function saveData() { try { localStorage.setItem(STORE, JSON.stringify(projects)); } catch(e){} }
+
+// ── UTILS ──────────────────────────────────────────────────────────────────────
+const uid = () => Math.random().toString(36).slice(2,9);
+const todayStr = () => new Date().toISOString().slice(0,10);
+const fmtDate = d => d ? new Date(d+'T12:00:00').toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "—";
+const stageInfo = id => STAGES.find(s=>s.id===id)||STAGES[0];
+const daysLeft = d => { if(!d) return null; return Math.round((new Date(d+'T12:00:00')-new Date())/86400000); };
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+// ── SVG ICONS ──────────────────────────────────────────────────────────────────
+const ico = {
+  dashboard: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
+  list: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
+  check2: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`,
+  plus: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>`,
+  back: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>`,
+  check: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>`,
+  close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>`,
+  building: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21V7l9-4 9 4v14H3z"/><path d="M9 21V12h6v9"/></svg>`,
+  people: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`,
+  personal: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>`,
+  flag: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>`,
+  note: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>`,
+  warn: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  trash: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>`,
+};
+
+// ── SIDEBAR ────────────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const groups = [
+    { label:"Development", types:["Residential","Commercial / Mixed-Use"], icon:"building" },
+    { label:"Consulting",  types:["Consulting"], icon:"people" },
+    { label:"Personal",    types:["Personal Development"], icon:"personal" },
+  ];
+  let h = `<div style="padding-top:4px">
+    <div class="sb-sec">Navigation</div>
+    ${[["dashboard","Dashboard","dashboard"],["projects","All Projects","list"],["actions","Actions","check2"]].map(([id,label,icon])=>`
+      <div class="sb-item ${state.view===id||(state.view==="detail"&&id==="projects")?"active":""}" onclick="nav('${id}')">
+        ${ico[icon]} ${esc(label)}
+      </div>`).join("")}
+  </div><hr class="sb-divider">`;
+  groups.forEach(g => {
+    const gp = projects.filter(p=>g.types.includes(p.type));
+    if(!gp.length) return;
+    h += `<div class="sb-sec">${esc(g.label)}</div>`;
+    gp.forEach(p => {
+      const s = stageInfo(p.stage);
+      h += `<div class="sb-item ${state.selectedId===p.id?"active":""}" onclick="viewProject('${p.id}')">
+        <div class="sb-dot" style="background:${s.color}"></div>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px">${esc(p.name)}</span>
+      </div>`;
+    });
+  });
+  document.getElementById("sb-nav").innerHTML = h;
+}
+
+// ── TOPBAR ─────────────────────────────────────────────────────────────────────
+function renderTopbar() {
+  const sel = projects.find(p=>p.id===state.selectedId);
+  const titles = { dashboard:"Dashboard", projects:"Projects", actions:"All Actions", detail: sel?.name||"Project" };
+  const metas = {
+    dashboard: `${projects.length} projects · ${projects.flatMap(p=>p.actions).filter(a=>!a.done).length} open actions`,
+    projects: `${getFiltered().length} projects`,
+    actions: ``,
+    detail: sel ? `${sel.type} · ${sel.location}` : ""
+  };
+  document.getElementById("tb-title").textContent = titles[state.view]||"";
+  document.getElementById("tb-meta").textContent = metas[state.view]||"";
+  let right = `<button class="btn btn-primary btn-sm" onclick="openModal('project')">${ico.plus} <span class="hide-mobile">New Project</span></button>`;
+  if(state.view==="projects") {
+    right = `<select class="form-select" style="width:auto;font-size:12px" onchange="setTypeFilter(this.value)">
+      <option value="all">All Types</option>
+      ${PTYPES.map(t=>`<option value="${esc(t)}" ${state.typeFilter===t?"selected":""}>${esc(t)}</option>`).join("")}
+    </select>` + right;
+  }
+  if(state.view==="detail" && sel) {
+    right = `<button class="btn btn-danger btn-sm" onclick="deleteProject('${sel.id}')">${ico.trash}</button>` + right;
+  }
+  document.getElementById("tb-right").innerHTML = right;
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────────
+function render() {
+  renderSidebar();
+  renderTopbar();
+  const c = document.getElementById("content");
+  if(state.view==="dashboard") c.innerHTML = renderDashboard();
+  else if(state.view==="projects") c.innerHTML = renderProjects();
+  else if(state.view==="detail") c.innerHTML = renderDetail();
+  else if(state.view==="actions") c.innerHTML = renderActions();
+}
+
+function getFiltered() {
+  return state.typeFilter==="all" ? projects : projects.filter(p=>p.type===state.typeFilter);
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const allAct = projects.flatMap(p=>p.actions);
+  const openAct = allAct.filter(a=>!a.done).length;
+  const overdueAct = allAct.filter(a=>!a.done&&a.dueDate&&daysLeft(a.dueDate)<0).length;
+  const upcoming = projects.flatMap(p=>p.milestones.filter(m=>!m.done&&m.date).map(m=>({...m,pName:p.name,pId:p.id})))
+    .sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,6);
+
+  const dateStr = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+
+  return `<div>
+    <div class="mb20">
+      <div class="sec-title">Good morning</div>
+      <div class="sec-sub">${dateStr} · Your portfolio at a glance</div>
+    </div>
+    <div class="grid-4 mb18">
+      <div class="stat-card"><div class="stat-label">Active Projects</div><div class="stat-value">${projects.length}</div><div class="stat-sub">${projects.filter(p=>p.type==="Consulting").length} consulting</div></div>
+      <div class="stat-card"><div class="stat-label">In Construction</div><div class="stat-value">${projects.filter(p=>p.stage==="construction").length}</div><div class="stat-sub">live schemes</div></div>
+      <div class="stat-card"><div class="stat-label">Open Actions</div><div class="stat-value" style="color:${overdueAct>0?"var(--red)":"var(--text)"}">${openAct}</div><div class="stat-sub" style="color:${overdueAct>0?"var(--red)":"inherit"}">${overdueAct>0?overdueAct+"d overdue":"all on track"}</div></div>
+      <div class="stat-card"><div class="stat-label">In Planning</div><div class="stat-value">${projects.filter(p=>p.stage==="planning").length}</div><div class="stat-sub">schemes</div></div>
+    </div>
+    <div class="grid-2 mb18">
+      <div class="card">
+        <div class="card-header"><span style="font-weight:600;font-size:14px">Portfolio by Stage</span></div>
+        <div class="card-body">
+          ${STAGES.map(s=>{ const cnt=projects.filter(p=>p.stage===s.id).length; return `
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px">
+              <div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+              <div style="flex:1;font-size:13px">${esc(s.label)}</div>
+              <div style="width:70px"><div class="prog-track"><div class="prog-fill" style="width:${projects.length?(cnt/projects.length)*100:0}%;background:${s.color}"></div></div></div>
+              <div style="width:16px;text-align:right;font-size:13px;font-weight:600">${cnt}</div>
+            </div>`; }).join("")}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span style="font-weight:600;font-size:14px">Upcoming Milestones</span></div>
+        <div class="card-body" style="padding:0 16px">
+          ${!upcoming.length ? `<div class="empty-state" style="padding:16px 0"><div class="empty-sub">No upcoming milestones with dates set</div></div>` :
+            upcoming.map(m=>{ const d=daysLeft(m.date); return `
+              <div class="ms-row" style="cursor:pointer" onclick="viewProject('${m.pId}')">
+                <div class="ms-check" style="border-color:var(--gold)">${ico.flag}</div>
+                <div class="ms-label">${esc(m.label)}</div>
+                <div style="font-size:11px;color:${d!==null&&d<14?"var(--red)":"var(--text3)"}">${fmtDate(m.date)}</div>
+                <div style="font-size:10px;color:var(--text3);padding-left:5px">${esc(m.pName)}</div>
+              </div>`; }).join("")}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span style="font-weight:600;font-size:14px">All Projects</span></div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>Project</th><th>Stage</th><th>Value</th><th>Progress</th><th class="hide-mobile">Target</th></tr></thead>
+          <tbody>
+            ${projects.map(p=>{ const s=stageInfo(p.stage); return `
+              <tr onclick="viewProject('${p.id}')">
+                <td><div style="font-weight:500">${esc(p.name)}</div><div style="font-size:11px;color:var(--text3)">${esc(p.location)}</div></td>
+                <td><span class="stage-badge" style="background:${s.color}1E;color:${s.color}">${s.short}</span></td>
+                <td style="font-weight:500;white-space:nowrap">${esc(p.value)}</td>
+                <td style="width:100px"><div style="display:flex;align-items:center;gap:5px">
+                  <div class="prog-track" style="flex:1"><div class="prog-fill" style="width:${p.progress}%;background:${s.color}"></div></div>
+                  <span style="font-size:11px;color:var(--text3);width:24px">${p.progress}%</span>
+                </div></td>
+                <td class="hide-mobile" style="font-size:12px;color:var(--text2)">${fmtDate(p.targetDate)}</td>
+              </tr>`; }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── PROJECTS ───────────────────────────────────────────────────────────────────
+function renderProjects() {
+  const fp = getFiltered();
+  if(!fp.length) return `<div><div class="sec-title">Projects</div><div class="sec-sub">Your full portfolio and consulting work</div>
+    <div class="card"><div class="empty-state"><div class="empty-icon">🏗</div><div class="empty-title">No projects yet</div>
+    <div class="empty-sub" style="margin-bottom:14px">Add your first project to get started</div>
+    <button class="btn btn-primary" onclick="openModal('project')">${ico.plus} New Project</button></div></div></div>`;
+  return `<div>
+    <div class="sec-title">Projects</div>
+    <div class="sec-sub">Your full development portfolio and consulting work</div>
+    <div class="grid-3">${fp.map(p=>renderProjectCard(p)).join("")}</div>
+  </div>`;
+}
+
+function renderProjectCard(p) {
+  const s = stageInfo(p.stage);
+  const d = daysLeft(p.targetDate);
+  const doneMs = p.milestones.filter(m=>m.done).length;
+  return `<div class="pcard" onclick="viewProject('${p.id}')">
+    <div class="pcard-accent" style="background:${s.color}"></div>
+    <div class="pcard-body">
+      <div class="pcard-type">${esc(p.type)}</div>
+      <div class="pcard-name">${esc(p.name)}</div>
+      <div class="pcard-loc">📍 ${esc(p.location)}</div>
+      <div class="pcard-stats">
+        <div><div class="pstat-lbl">Value</div><div class="pstat-val">${esc(p.value)}</div></div>
+        <div><div class="pstat-lbl">Scale</div><div class="pstat-val">${esc(p.units)}</div></div>
+        <div><div class="pstat-lbl">Milestones</div><div class="pstat-val">${doneMs}/${p.milestones.length}</div></div>
+      </div>
+      <div><div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:10.5px;color:var(--text3)">Progress</span>
+        <span style="font-size:10.5px;font-weight:600;color:var(--text2)">${p.progress}%</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" style="width:${p.progress}%;background:${s.color}"></div></div></div>
+      <div class="pcard-footer">
+        <span class="stage-badge" style="background:${s.color}1E;color:${s.color}">${s.short}</span>
+        ${d!==null?`<span style="font-size:11px;color:${d<0?"var(--red)":d<30?"var(--gold)":"var(--text3)"}">${d<0?Math.abs(d)+"d overdue":d+"d left"}</span>`:""}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── DETAIL ──────────────────────────────────────────────────────────────────────
+function renderDetail() {
+  const p = projects.find(x=>x.id===state.selectedId);
+  if(!p) return `<div>Project not found</div>`;
+  const s = stageInfo(p.stage);
+  const days = daysLeft(p.targetDate);
+  const openMs = p.milestones.filter(m=>!m.done).length;
+  const openAct = p.actions.filter(a=>!a.done).length;
+
+  let tabContent = "";
+  if(state.tab==="milestones") {
+    tabContent = `<div class="card">
+      <div class="card-header"><span style="font-weight:600;font-size:14px">Project Milestones</span>
+        <button class="btn btn-ghost btn-sm" onclick="openModal('milestone')">${ico.plus} Add</button></div>
+      <div class="card-body" style="padding:0 16px">
+        ${!p.milestones.length?`<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-title">No milestones</div></div>`:
+          p.milestones.map(m=>`
+            <div class="ms-row">
+              <div class="ms-check ${m.done?"done":""}" onclick="toggleMilestone('${p.id}','${m.id}')">
+                ${m.done?ico.check:""}
+              </div>
+              <div class="ms-label ${m.done?"done":""}">${esc(m.label)}</div>
+              ${m.date?`<div class="ms-date">${fmtDate(m.date)}</div>`:""}
+              <button class="del-btn" onclick="delMilestone('${p.id}','${m.id}')">×</button>
+            </div>`).join("")}
+      </div>
+    </div>`;
+  } else if(state.tab==="actions") {
+    tabContent = `<div class="card">
+      <div class="card-header"><span style="font-weight:600;font-size:14px">Actions & Follow-ups</span>
+        <button class="btn btn-ghost btn-sm" onclick="openModal('action')">${ico.plus} Add</button></div>
+      <div class="card-body">
+        ${!p.actions.length?`<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">No actions yet</div><div class="empty-sub">Track follow-ups and tasks here</div></div>`:
+          p.actions.map(a=>`
+            <div class="act-item ${a.done?"faded":""}">
+              <div class="act-check ${a.done?"done":""}" onclick="toggleAction('${p.id}','${a.id}')">
+                ${a.done?ico.check:""}
+              </div>
+              <div style="flex:1">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                  <span class="act-text ${a.done?"done":""}">${esc(a.text)}</span>
+                  <span class="pri-badge pri-${a.priority}">${a.priority}</span>
+                </div>
+                <div class="act-meta">
+                  ${a.assignee?`👤 ${esc(a.assignee)}${a.dueDate?" · ":""}`:""}
+                  ${a.dueDate?`📅 Due ${fmtDate(a.dueDate)}`:""}
+                </div>
+              </div>
+              <button class="del-btn" onclick="delAction('${p.id}','${a.id}')">×</button>
+            </div>`).join("")}
+      </div>
+    </div>`;
+  } else if(state.tab==="notes") {
+    tabContent = `<div class="card">
+      <div class="card-header"><span style="font-weight:600;font-size:14px">Notes & Ideas</span>
+        <button class="btn btn-ghost btn-sm" onclick="openModal('note')">${ico.plus} Add Note</button></div>
+      <div class="card-body">
+        ${!p.notes.length?`<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-title">No notes yet</div><div class="empty-sub">Capture ideas and observations here</div></div>`:
+          p.notes.map(n=>`
+            <div class="note-item">
+              <div class="note-meta"><span>${fmtDate(n.date)}</span>
+                <button class="del-btn" style="margin:-2px -4px 0 0" onclick="delNote('${p.id}','${n.id}')">×</button></div>
+              <div class="note-text">${esc(n.text)}</div>
+            </div>`).join("")}
+      </div>
+    </div>`;
+  } else if(state.tab==="dates") {
+    tabContent = `<div class="card">
+      <div class="card-header"><span style="font-weight:600;font-size:14px">Key Dates</span></div>
+      <div class="card-body">
+        <div class="grid-2 mb18">
+          <div class="stat-card"><div class="stat-label">Start Date</div><div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600">${fmtDate(p.startDate)}</div></div>
+          <div class="stat-card"><div class="stat-label">Target Completion</div><div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:${days!==null&&days<0?"var(--red)":"var(--text)"}">${fmtDate(p.targetDate)}</div></div>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Completed Milestones</div>
+        ${p.milestones.filter(m=>m.done).map(m=>`
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+            <span style="color:var(--green)">✓ ${esc(m.label)}</span>
+            <span style="color:var(--text3)">${fmtDate(m.date)}</span>
+          </div>`).join("")}
+        ${!p.milestones.filter(m=>m.done).length?`<div style="font-size:13px;color:var(--text3)">No milestones completed yet.</div>`:""}
+      </div>
+    </div>`;
+  }
+
+  const idx = STAGES.findIndex(s=>s.id===p.stage);
+  const tlBars = STAGES.map((sg,i)=>`<div class="tl-stage">
+    <div class="tl-bar ${i<idx?"done":i===idx?"active":""}"></div>
+    <div class="tl-lbl">${sg.short}</div>
+  </div>`).join("");
+
+  return `<div>
+    <div class="breadcrumb" onclick="nav('projects')">${ico.back} All Projects</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:18px">
+      <div>
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:5px">
+          <span class="chip">${esc(p.type)}</span>
+          <span class="stage-badge" style="background:${s.color}1E;color:${s.color}">${s.label}</span>
+          ${days!==null&&days<60?`<span style="font-size:11px;color:${days<0?"var(--red)":days<30?"var(--gold)":"var(--text3)"};display:flex;align-items:center;gap:3px">${ico.warn} ${days<0?Math.abs(days)+"d overdue":days+"d to completion"}</span>`:""}
+        </div>
+        <div class="detail-title">${esc(p.name)}</div>
+        <div class="detail-sub">📍 ${esc(p.location)} · ${esc(p.value)} · ${esc(p.units)}</div>
+      </div>
+      <div style="display:flex;gap:7px;flex-shrink:0;padding-top:4px">
+        <button class="btn btn-ghost btn-sm" onclick="openModal('action')">${ico.check2} <span class="hide-mobile">Action</span></button>
+        <button class="btn btn-ghost btn-sm" onclick="openModal('note')">${ico.note} <span class="hide-mobile">Note</span></button>
+      </div>
+    </div>
+
+    <div class="grid-4 mb14">
+      <div class="stat-card">
+        <div class="stat-label">Progress</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="stat-value">${p.progress}%</div>
+          <input type="range" min="0" max="100" value="${p.progress}" style="flex:1;accent-color:${s.color}" onchange="updateProgress('${p.id}',this.value)">
+        </div>
+      </div>
+      <div class="stat-card"><div class="stat-label">Milestones Left</div><div class="stat-value">${openMs}</div><div class="stat-sub">${p.milestones.filter(m=>m.done).length} complete</div></div>
+      <div class="stat-card"><div class="stat-label">Open Actions</div><div class="stat-value" style="color:${openAct>0?"var(--red)":"var(--green)"}">${openAct}</div><div class="stat-sub">${p.actions.length} total</div></div>
+      <div class="stat-card"><div class="stat-label">Stage</div>
+        <select class="form-select" style="font-size:12px;margin-top:4px" onchange="updateStage('${p.id}',this.value)">
+          ${STAGES.map(sg=>`<option value="${sg.id}" ${p.stage===sg.id?"selected":""}>${sg.label}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+
+    <div class="card mb14">
+      <div class="card-body" style="padding:11px 16px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">Development Lifecycle</div>
+        <div class="tl-wrap">${tlBars}</div>
+        ${p.description?`<div style="font-size:13px;color:var(--text2);border-top:1px solid var(--border);padding-top:9px;margin-top:5px">${esc(p.description)}</div>`:""}
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab ${state.tab==="milestones"?"active":""}" onclick="setTab('milestones')">
+        Milestones ${openMs>0?`<span class="tab-badge" style="background:var(--gold-bg);color:var(--gold)">${openMs}</span>`:""}
+      </div>
+      <div class="tab ${state.tab==="actions"?"active":""}" onclick="setTab('actions')">
+        Actions ${openAct>0?`<span class="tab-badge" style="background:#F9E4DF;color:var(--red)">${openAct}</span>`:""}
+      </div>
+      <div class="tab ${state.tab==="notes"?"active":""}" onclick="setTab('notes')">
+        Notes ${p.notes.length>0?`<span class="tab-badge" style="background:var(--surface2);color:var(--text3)">${p.notes.length}</span>`:""}
+      </div>
+      <div class="tab ${state.tab==="dates"?"active":""}" onclick="setTab('dates')">Key Dates</div>
+    </div>
+
+    ${tabContent}
+  </div>`;
+}
+
+// ── ACTIONS VIEW ───────────────────────────────────────────────────────────────
+function renderActions() {
+  const all = projects.flatMap(p=>p.actions.map(a=>({...a,pName:p.name,pId:p.id})));
+  const filtered = state.actionFilter==="open"?all.filter(a=>!a.done):state.actionFilter==="done"?all.filter(a=>a.done):all;
+  const sorted = [...filtered].sort((a,b)=>(!a.dueDate&&!b.dueDate)?0:!a.dueDate?1:!b.dueDate?-1:new Date(a.dueDate)-new Date(b.dueDate));
+  const open = all.filter(a=>!a.done).length;
+  const overdue = all.filter(a=>!a.done&&a.dueDate&&daysLeft(a.dueDate)<0).length;
+  return `<div>
+    <div class="sec-title">All Actions</div>
+    <div class="sec-sub">Across all projects · sorted by due date</div>
+    <div class="grid-3 mb18">
+      <div class="stat-card"><div class="stat-label">Open</div><div class="stat-value" style="color:${open>0?"var(--red)":"var(--green)"}">${open}</div></div>
+      <div class="stat-card"><div class="stat-label">Overdue</div><div class="stat-value" style="color:${overdue>0?"var(--red)":"var(--green)"}">${overdue}</div></div>
+      <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${all.length}</div></div>
+    </div>
+    <div class="tabs">
+      ${["open","done","all"].map(f=>`<div class="tab ${state.actionFilter===f?"active":""}" onclick="setActionFilter('${f}')" style="text-transform:capitalize">${f}</div>`).join("")}
+    </div>
+    <div class="card"><div class="card-body">
+      ${!sorted.length?`<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">No ${state.actionFilter} actions</div></div>`:""}
+      ${sorted.map(a=>{ const d=daysLeft(a.dueDate); return `
+        <div class="act-item ${a.done?"faded":""}">
+          <div class="act-check ${a.done?"done":""}" onclick="toggleActionGlobal('${a.pId}','${a.id}')">
+            ${a.done?ico.check:""}
+          </div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="act-text ${a.done?"done":""}">${esc(a.text)}</span>
+              <span class="pri-badge pri-${a.priority}">${a.priority}</span>
+              <span class="chip" style="font-size:10px">${esc(a.pName)}</span>
+            </div>
+            <div class="act-meta">
+              ${a.assignee?`👤 ${esc(a.assignee)} · `:""}
+              ${a.dueDate?`<span style="color:${d!==null&&d<0?"var(--red)":d!==null&&d<7?"var(--gold)":"inherit"}">📅 ${d!==null&&d<0?Math.abs(d)+"d overdue":"Due "+fmtDate(a.dueDate)}</span>`:""}
+            </div>
+          </div>
+        </div>`; }).join("")}
+    </div></div>
+  </div>`;
+}
+
+// ── MODALS ─────────────────────────────────────────────────────────────────────
+function openModal(type) {
+  const overlay = document.getElementById("modal-"+type);
+  const inner = document.getElementById("modal-"+type+"-inner");
+  if(!overlay||!inner) return;
+  inner.innerHTML = getModalHTML(type);
+  overlay.classList.add("show");
+  setTimeout(()=>{ const first=inner.querySelector("input,textarea"); if(first) first.focus(); },200);
+}
+function closeModal(type) {
+  const overlay = document.getElementById("modal-"+type);
+  if(overlay) overlay.classList.remove("show");
+}
+
+function getModalHTML(type) {
+  if(type==="project") return `
+    <div class="modal-header"><div class="modal-title">New Project</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('project')">${ico.close}</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" id="pf-name" placeholder="e.g. Victoria Gate"></div>
+        <div class="form-group"><label class="form-label">Type</label><select class="form-select" id="pf-type">${PTYPES.map(t=>`<option>${t}</option>`).join("")}</select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="pf-loc" placeholder="City, Postcode"></div>
+        <div class="form-group"><label class="form-label">Current Stage</label><select class="form-select" id="pf-stage">${STAGES.map(s=>`<option value="${s.id}">${s.label}</option>`).join("")}</select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">GDV / Fee Value</label><input class="form-input" id="pf-value" placeholder="£0m GDV"></div>
+        <div class="form-group"><label class="form-label">Units / Scale</label><input class="form-input" id="pf-units" placeholder="e.g. 120 units"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Start Date</label><input class="form-input" type="date" id="pf-start" value="${todayStr()}"></div>
+        <div class="form-group"><label class="form-label">Target Completion</label><input class="form-input" type="date" id="pf-target"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="pf-desc" placeholder="Brief overview..."></textarea></div>
+
+```
+  <div class="form-hint">✦ Milestones will be auto-loaded from the selected stage template</div>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-ghost" onclick="closeModal('project')">Cancel</button>
+  <button class="btn btn-primary" onclick="submitProject()">${ico.plus} Add Project</button>
+</div>`;
+```
+
+if(type===“note”) return ` <div class="modal-header"><div class="modal-title">Add Note</div> <button class="btn btn-ghost btn-sm" onclick="closeModal('note')">${ico.close}</button></div> <div class="modal-body"> <div class="form-group"><label class="form-label">Note</label> <textarea class="form-textarea" id="nf-text" style="min-height:100px" placeholder="Capture an idea, observation or update..."></textarea></div> </div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeModal('note')">Cancel</button> <button class="btn btn-primary" onclick="submitNote()">Save Note</button> </div>`;
+
+if(type===“action”) return ` <div class="modal-header"><div class="modal-title">Add Action</div> <button class="btn btn-ghost btn-sm" onclick="closeModal('action')">${ico.close}</button></div> <div class="modal-body"> <div class="form-group"><label class="form-label">Action *</label><input class="form-input" id="af-text" placeholder="What needs to happen?"></div> <div class="form-row"> <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" type="date" id="af-due"></div> <div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="af-priority">${PRIO.map(p=>`<option>${p}</option>`).join("")}</select></div> </div> <div class="form-group"><label class="form-label">Assignee / Owner</label><input class="form-input" id="af-assignee" placeholder="Name or team"></div> </div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeModal('action')">Cancel</button> <button class="btn btn-primary" onclick="submitAction()">Add Action</button> </div>`;
+
+if(type===“milestone”) return ` <div class="modal-header"><div class="modal-title">Add Milestone</div> <button class="btn btn-ghost btn-sm" onclick="closeModal('milestone')">${ico.close}</button></div> <div class="modal-body"> <div class="form-group"><label class="form-label">Milestone *</label><input class="form-input" id="mf-label" placeholder="e.g. Planning Approved"></div> <div class="form-group"><label class="form-label">Target Date</label><input class="form-input" type="date" id="mf-date"></div> </div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeModal('milestone')">Cancel</button> <button class="btn btn-primary" onclick="submitMilestone()">Add</button> </div>`;
+return “”;
+}
+
+// ── FORM SUBMITS ───────────────────────────────────────────────────────────────
+function submitProject() {
+const name = document.getElementById(“pf-name”)?.value.trim();
+if(!name) return;
+const stage = document.getElementById(“pf-stage”)?.value||“feasibility”;
+const ms = (MS_TPLS[stage]||[]).map(t=>({id:uid(),label:t,done:false,date:””}));
+projects.push({
+id:uid(), name,
+type: document.getElementById(“pf-type”)?.value||“Residential”,
+location: document.getElementById(“pf-loc”)?.value.trim()||””,
+stage,
+value: document.getElementById(“pf-value”)?.value.trim()||””,
+units: document.getElementById(“pf-units”)?.value.trim()||””,
+startDate: document.getElementById(“pf-start”)?.value||todayStr(),
+targetDate: document.getElementById(“pf-target”)?.value||””,
+description: document.getElementById(“pf-desc”)?.value.trim()||””,
+progress: 0, milestones: ms, notes:[], actions:[]
+});
+saveData(); closeModal(“project”); render();
+}
+function submitNote() {
+const text = document.getElementById(“nf-text”)?.value.trim();
+if(!text||!state.selectedId) return;
+const p = projects.find(x=>x.id===state.selectedId);
+if(p) { p.notes.unshift({id:uid(),text,date:todayStr()}); saveData(); }
+closeModal(“note”); render();
+}
+function submitAction() {
+const text = document.getElementById(“af-text”)?.value.trim();
+if(!text||!state.selectedId) return;
+const p = projects.find(x=>x.id===state.selectedId);
+if(p) { p.actions.push({id:uid(),text,priority:document.getElementById(“af-priority”)?.value||“Medium”,dueDate:document.getElementById(“af-due”)?.value||””,assignee:document.getElementById(“af-assignee”)?.value.trim()||””,done:false,created:todayStr()}); saveData(); }
+closeModal(“action”); render();
+}
+function submitMilestone() {
+const label = document.getElementById(“mf-label”)?.value.trim();
+if(!label||!state.selectedId) return;
+const p = projects.find(x=>x.id===state.selectedId);
+if(p) { p.milestones.push({id:uid(),label,date:document.getElementById(“mf-date”)?.value||””,done:false}); saveData(); }
+closeModal(“milestone”); render();
+}
+
+// ── ACTIONS ────────────────────────────────────────────────────────────────────
+function nav(v) { state.view=v; if(v!==“detail”) state.selectedId=null; closeSidebar(); render(); }
+function viewProject(id) { state.selectedId=id; state.view=“detail”; state.tab=“milestones”; closeSidebar(); render(); }
+function setTab(t) { state.tab=t; render(); }
+function setTypeFilter(v) { state.typeFilter=v; render(); }
+function setActionFilter(v) { state.actionFilter=v; render(); }
+function deleteProject(id) { if(!confirm(“Delete this project?”)) return; projects=projects.filter(p=>p.id!==id); saveData(); nav(“projects”); }
+function toggleMilestone(pid,mid) { const p=projects.find(x=>x.id===pid); if(p){ const m=p.milestones.find(x=>x.id===mid); if(m)m.done=!m.done; saveData(); render(); } }
+function toggleAction(pid,aid) { const p=projects.find(x=>x.id===pid); if(p){ const a=p.actions.find(x=>x.id===aid); if(a)a.done=!a.done; saveData(); render(); } }
+function toggleActionGlobal(pid,aid) { toggleAction(pid,aid); }
+function delNote(pid,nid) { const p=projects.find(x=>x.id===pid); if(p){ p.notes=p.notes.filter(n=>n.id!==nid); saveData(); render(); } }
+function delAction(pid,aid) { const p=projects.find(x=>x.id===pid); if(p){ p.actions=p.actions.filter(a=>a.id!==aid); saveData(); render(); } }
+function delMilestone(pid,mid) { const p=projects.find(x=>x.id===pid); if(p){ p.milestones=p.milestones.filter(m=>m.id!==mid); saveData(); render(); } }
+function updateProgress(pid,val) { const p=projects.find(x=>x.id===pid); if(p){ p.progress=Number(val); saveData(); document.querySelector(”.stat-value”)&&render(); } }
+function updateStage(pid,val) { const p=projects.find(x=>x.id===pid); if(p){ p.stage=val; saveData(); render(); } }
+
+// ── MOBILE SIDEBAR ─────────────────────────────────────────────────────────────
+function toggleSidebar() {
+document.getElementById(“sidebar”).classList.toggle(“open”);
+document.getElementById(“overlay”).classList.toggle(“show”);
+}
+function closeSidebar() {
+document.getElementById(“sidebar”).classList.remove(“open”);
+document.getElementById(“overlay”).classList.remove(“show”);
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+loadData();
+render();
+</script>
+
+</body>
+</html>
