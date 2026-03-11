@@ -752,9 +752,10 @@ for (var i = 0; i < projects.length; i++) { if (projects[i].id === pid) { projec
 saveData(); render();
 }
 function toggleSB() { document.getElementById(“sb”).classList.toggle(“open”); document.getElementById(“ovl”).classList.toggle(“show”); }
-function closeSB() { document.getElementById(“sb”).classList.remove(“open”); document.getElementById(“ovl”).classList.remove(“show”); }
+function closeSB() { document.getElementById(“sb”).classList.remove(“open”); document.getElementById(“ovl”).classList.remove(“show”)
 
-loadData();
+window.onerror=function(m,s,l){document.getElementById('ct').innerHTML='<div style="padding:20px;color:red">ERROR: '+m+' line '+l+'</div>';};loadData();
+                    
 render();
 </script>
 
